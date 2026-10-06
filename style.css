@@ -602,6 +602,8 @@ button:active {
 .site-logo {
   width: 48px;
   height: 48px;
+  min-width: 48px;
   object-fit: contain;
   border-radius: 8px;
+  flex-shrink: 0;
 }
