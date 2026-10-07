@@ -520,4 +520,94 @@ copyTextBtn.addEventListener('click', () => {
   }).catch(() => {
     showError('Failed to copy text.');
   });
+});downloadPdfBtn.addEventListener('click', () => {
+  if (!resumePreview.innerHTML.trim()) {
+    showError('Generate a resume before downloading a PDF.');
+    return;
+  }
+  if (typeof html2pdf !== 'function') {
+    showError('PDF exporter failed to load. Check your connection and refresh.');
+    return;
+  }
+
+  const filename = `${slugify(targetRoleInput.value.trim())}-resume.pdf`;
+
+  resumePreview.classList.add('pdf-export');
+  const cleanup = () => resumePreview.classList.remove('pdf-export');
+
+  html2pdf()
+    .set({
+      margin: 10,
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    })
+    .from(resumePreview)
+    .save()
+    .then(cleanup)
+    .catch(() => {
+      cleanup();
+      showError('Could not export the PDF. Please try again.');
+    });
+});
+copyTextBtn.addEventListener('click', () => {
+  const textContent = resumePreview.innerText;
+  if (!textContent.trim()) {
+    showError('No resume text available to copy.');
+    return;
+  }
+  navigator.clipboard.writeText(textContent).then(() => {
+    const originalText = copyTextBtn.textContent;
+    copyTextBtn.textContent = 'Copied to Clipboard!';
+    setTimeout(() => {
+      copyTextBtn.textContent = originalText;
+    }, 2000);
+  }).catch(() => {
+    showError('Failed to copy text.');
+  });
+});
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  clearError();
+
+  const targetRole = targetRoleInput.value.trim();
+  const background = backgroundInput.value.trim();
+
+  if (!targetRole || !background) {
+    showError('Please enter a target role and your background text.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const parsed = await simulateAnalysis(targetRole, background);
+    const html = parsed.rewritten_resume_html;
+    const match = Number.parseInt(parsed.match_probability, 10);
+
+    if (typeof html !== 'string' || !html.trim()) {
+      throw new Error('Resume HTML was missing from the response.');
+    }
+
+    resumePreview.innerHTML = html;
+    const score = Number.isFinite(match) ? match : 0;
+    matchProbabilityEl.textContent = Number.isFinite(match) ? `${match}%` : '—';
+    scoreRing.style.setProperty('--p', String(score));
+    matchCaption.textContent = score >= 80
+      ? 'Strong alignment with the target role.'
+      : score >= 60
+        ? 'Solid foundation with a few high-impact gaps.'
+        : 'Prioritize the missing skills to improve ATS match.';
+    renderSkills(presentSkillsEl, parsed.present_skills);
+    renderSkills(missingSkillsEl, parsed.missing_skills);
+    dashboard.hidden = false;
+    dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    showError(error.message || 'Could not generate the resume. Please try again.');
+  } finally {
+    setLoading(false);
+  }
 });
