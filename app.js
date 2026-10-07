@@ -203,6 +203,7 @@ function renderSkills(listEl, skills, isMissingSection = false) {
   skills.forEach((skill) => {
     const item = document.createElement('li');
     item.textContent = String(skill);
+    item.dataset.skill = String(skill);
 
     if (isMissingSection) {
       const color = colorForSkill(skill);   // same color the ring segment will use
@@ -215,18 +216,28 @@ function renderSkills(listEl, skills, isMissingSection = false) {
       item.style.opacity = selected ? '0.5' : '1';
       item.style.textDecoration = selected ? 'line-through' : 'none';
       item.title = 'Click to simulate adding this skill to your match score!';
-        item.tabIndex = 0;
-  item.setAttribute('role', 'button');
-  item.setAttribute('aria-pressed', String(selected));
-  item.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
-  });
+
+      // Keyboard accessibility
+      item.tabIndex = 0;
+      item.setAttribute('role', 'button');
+      item.setAttribute('aria-pressed', String(selected));
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          item.click();
+        }
+      });
 
       item.addEventListener('click', () => {
         if (simulatedAddedSkills.has(skill)) simulatedAddedSkills.delete(skill);
         else simulatedAddedSkills.add(skill);
+
         renderSkills(listEl, skills, true);
         updateScoreRingAndSimulation();
+
+        // Keep keyboard focus on the badge that was just toggled
+        const again = Array.from(listEl.children).find((el) => el.dataset.skill === String(skill));
+        if (again) again.focus();
       });
     } else {
       item.title = 'Click to view optimization tip';
@@ -252,7 +263,7 @@ function slugify(value) {
 }
 
 function detectCatalogKey(targetRole) {
- 
+  // Look only at the role part, not the company ("... at Stripe")
   const text = targetRole.toLowerCase().split(/\s+(?:at|@)\s+/)[0];
   if (/(full[- ]?stack|mern|\bnode)/.test(text)) return 'fullstack';
   if (/(front[- ]?end|react|ui engineer)/.test(text)) return 'frontend';
@@ -262,10 +273,9 @@ function detectCatalogKey(targetRole) {
 
 function hasAlias(haystack, alias) {
   const escaped = alias.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Short aliases must be whole words (allow plural / "ful": APIs, RESTful)
   const tail = alias.length <= 4 ? '(?:s|ful)?(?![a-z0-9])' : '';
   return new RegExp(`(^|[^a-z0-9])${escaped}${tail}`, 'i').test(haystack);
-}
-  return haystack.includes(needle);
 }
 
 function analyzeBackground(targetRole, background) {
@@ -299,7 +309,7 @@ function extractName(background) {
 function extractBullets(background) {
   const lines = background.split(/\n/).map((line) => line.trim()).filter(Boolean);
   const bullets = lines
-  .filter((line) => /^[-•*]/.test(line) || /\b(developed|built|led|designed|improved|created|shipped)\b/i.test(line))
+    .filter((line) => /^[-•*]/.test(line) || /\b(developed|built|led|designed|improved|created|shipped)\b/i.test(line))
     .map((line) => line.replace(/^[-•*]+\s*/, ''))
     .slice(0, 6);
 
@@ -485,6 +495,7 @@ browseBtn.addEventListener('click', (e) => {
 });
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('keydown', (e) => {
+  if (e.target !== dropZone) return; // don't hijack keys from the inner Browse button
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     fileInput.click();
@@ -602,19 +613,49 @@ downloadPdfBtn.addEventListener('click', () => {
     });
 });
 
-copyTextBtn.addEventListener('click', () => {
+function fallbackCopy(text) {
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch (e) {
+    ok = false;
+  }
+  document.body.removeChild(area);
+  return ok;
+}
+
+copyTextBtn.addEventListener('click', async () => {
   const textContent = resumePreview.innerText;
   if (!textContent.trim()) {
     showError('No resume text available to copy.');
     return;
   }
-  navigator.clipboard.writeText(textContent).then(() => {
+
+  let copied = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(textContent);
+      copied = true;
+    }
+  } catch (e) {
+    copied = false;
+  }
+  if (!copied) copied = fallbackCopy(textContent);
+
+  if (copied) {
     const originalText = copyTextBtn.textContent;
     copyTextBtn.textContent = 'Copied to Clipboard!';
     setTimeout(() => {
       copyTextBtn.textContent = originalText;
     }, 2000);
-  }).catch(() => {
+  } else {
     showError('Failed to copy text.');
-  });
+  }
 });
