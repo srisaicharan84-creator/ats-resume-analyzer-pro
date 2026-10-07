@@ -237,8 +237,6 @@ function buildResumeHtml(targetRole, background, analysis) {
     <ul>${skills}</ul>
     <h2>Selected Experience</h2>
     <ul>${bullets}</ul>
-    <h2>Skill gap notes</h2>
-    <p>Priority development areas for this role: ${escapeHtml(analysis.missing.slice(0, 4).join(', ') || 'none identified')}.</p>
   `;
 }
 
