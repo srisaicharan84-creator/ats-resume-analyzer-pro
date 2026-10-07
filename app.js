@@ -134,7 +134,6 @@ function setLoading(isLoading) {
   generateBtn.disabled = isLoading;
   generateBtn.textContent = isLoading ? 'Generating…' : 'Generate Resume';
 }
-
 function renderSkills(listEl, skills) {
   listEl.innerHTML = '';
   if (!Array.isArray(skills) || skills.length === 0) {
@@ -148,15 +147,16 @@ function renderSkills(listEl, skills) {
   skills.forEach((skill) => {
     const item = document.createElement('li');
     item.textContent = String(skill);
-    // Interactive click alert/action for judges
-    item.title = 'Click to focus skill context';
+    item.title = 'Click to view optimization tip';
     item.addEventListener('click', () => {
-      targetRoleInput.focus();
-      matchCaption.textContent = `Tip: Emphasize "${skill}" in your experience bullets to boost your ATS match score!`;
+      if (matchCaption) {
+        matchCaption.textContent = `Tip: Emphasize "${skill}" in your experience bullets to boost your ATS match score!`;
+      }
     });
     listEl.appendChild(item);
   });
 }
+
 function slugify(value) {
   return value
     .toLowerCase()
