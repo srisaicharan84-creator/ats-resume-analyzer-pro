@@ -184,11 +184,12 @@ function updateScoreRingAndSimulation() {
   }
 }
 function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 10) {
+  if (!listEl) return;
   listEl.innerHTML = '';
   if (!Array.isArray(skills) || skills.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'empty';
-    empty.textContent = 'None listed';
+   empty.textContent = isMissingSection ? 'No missing skills — perfect match!' : 'None listed';
     listEl.appendChild(empty);
     return;
   }
