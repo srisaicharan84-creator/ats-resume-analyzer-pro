@@ -245,18 +245,19 @@ function slugify(value) {
 }
 
 function detectCatalogKey(targetRole) {
-  const text = targetRole.toLowerCase();
+ 
+  const text = targetRole.toLowerCase().split(/\s+(?:at|@)\s+/)[0];
+  if (/(full[- ]?stack|mern|\bnode)/.test(text)) return 'fullstack';
   if (/(front[- ]?end|react|ui engineer)/.test(text)) return 'frontend';
-  if (/(full[- ]?stack|node|mern)/.test(text)) return 'fullstack';
-  if (/(python|django|fastapi|backend)/.test(text)) return 'python';
+  if (/(python|django|fastapi|back[- ]?end)/.test(text)) return 'python';
   return 'general';
 }
 
 function hasAlias(haystack, alias) {
-  const needle = alias.toLowerCase();
-  if (needle.length <= 2) {
-    return new RegExp(`(^|[^a-z0-9])${needle}([^a-z0-9]|$)`, 'i').test(haystack);
-  }
+  const escaped = alias.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tail = alias.length <= 4 ? '(?:s|ful)?(?![a-z0-9])' : '';
+  return new RegExp(`(^|[^a-z0-9])${escaped}${tail}`, 'i').test(haystack);
+}
   return haystack.includes(needle);
 }
 
@@ -291,7 +292,7 @@ function extractName(background) {
 function extractBullets(background) {
   const lines = background.split(/\n/).map((line) => line.trim()).filter(Boolean);
   const bullets = lines
-    .filter((line) => /^[-•*]/.test(line) || /developed|built|led|designed|improved|created|shipped/i.test(line))
+  .filter((line) => /^[-•*]/.test(line) || /\b(developed|built|led|designed|improved|created|shipped)\b/i.test(line))
     .map((line) => line.replace(/^[-•*]+\s*/, ''))
     .slice(0, 6);
 
