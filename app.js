@@ -136,16 +136,53 @@ function setLoading(isLoading) {
 }
 let baseMatchScore = 0;
 let totalCatalogLength = 0;
-const SKILL_COLORS = [
-  { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' }, 
-  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe' }, 
-  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa' },
-  { bg: '#fefce8', text: '#a16207', border: '#fef08a' }, 
-  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
-  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8' }, 
-  { bg: '#f8fafc', text: '#334155', border: '#cbd5e1' },
-];
+let simulatedAddedSkills = new Set();
 
+const SKILL_COLORS = [
+  { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', hex: '#1d4ed8' },
+  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe', hex: '#a21caf' }, 
+  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', hex: '#c2410c' }, 
+  { bg: '#fefce8', text: '#a16207', border: '#fef08a', hex: '#ca8a04' }, 
+  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', hex: '#15803d' }, 
+  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8', hex: '#be185d' }, 
+  { bg: '#f8fafc', text: '#334155', border: '#cbd5e1', hex: '#475569' }, 
+];
+function updateScoreRingAndSimulation() {
+  const boostPerSkill = totalCatalogLength > 0 ? Math.round(88 / totalCatalogLength) : 8;
+  const activeCount = simulatedAddedSkills.size;
+  const simulatedScore = Math.min(99, baseMatchScore + (activeCount * boostPerSkill));
+
+  matchProbabilityEl.textContent = `${simulatedScore}%`;
+  scoreRing.style.setProperty('--p', String(simulatedScore));
+
+ 
+  if (activeCount === 0) {
+    scoreRing.style.background = `conic-gradient(var(--navy) calc(${simulatedScore} * 1%), #e2e8f0 0)`;
+  } else {
+    let gradientStops = [];
+    let currentPct = baseMatchScore;
+    gradientStops.push(`var(--navy) 0% ${currentPct}%`);
+
+    let idx = 0;
+    simulatedAddedSkills.forEach(() => {
+      const colorObj = SKILL_COLORS[idx % SKILL_COLORS.length];
+      const nextPct = Math.min(99, currentPct + boostPerSkill);
+      gradientStops.push(`${colorObj.hex} ${currentPct}% ${nextPct}%`);
+      currentPct = nextPct;
+      idx++;
+    });
+    gradientStops.push(`#e2e8f0 ${currentPct}% 100%`);
+    scoreRing.style.background = `conic-gradient(${gradientStops.join(', ')})`;
+  }
+
+  if (activeCount > 0) {
+    matchCaption.textContent = `Simulation active: +${activeCount} skill(s) selected. Potential match score: ${simulatedScore}%! (Resume unchanged)`;
+  } else {
+    matchCaption.textContent = baseMatchScore >= 80
+      ? 'Strong alignment with the target role.'
+      : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
+  }
+}
 function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 10) {
   listEl.innerHTML = '';
   if (!Array.isArray(skills) || skills.length === 0) {
@@ -156,7 +193,7 @@ function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 
     return;
   }
 
-  skills.forEach((skill) => {
+  skills.forEach((skill, index) => {
     const item = document.createElement('li');
     item.textContent = String(skill);
 
@@ -167,29 +204,25 @@ function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 
       item.style.border = `1px solid ${colorScheme.border}`;
       item.style.cursor = 'pointer';
       item.title = 'Click to simulate adding this skill to your match score!';
-      
-      
-      let isSimulatedActive = false;
+
+      // Reflect current simulation state from the central Set
+      if (simulatedAddedSkills.has(skill)) {
+        item.style.opacity = '0.5';
+        item.style.textDecoration = 'line-through';
+      } else {
+        item.style.opacity = '1';
+        item.style.textDecoration = 'none';
+      }
+
       item.addEventListener('click', () => {
-        isSimulatedActive = !isSimulatedActive;
-        
-        const boostPerSkill = catalogLength > 0 ? Math.round(88 / catalogLength) : 8;
-        const currentScoreNum = parseInt(matchProbabilityEl.textContent, 10) || baseMatchScore;
-        
-        if (isSimulatedActive) {
-          item.style.opacity = '0.6';
-          item.style.textDecoration = 'line-through';
-          const newScore = Math.min(99, currentScoreNum + boostPerSkill);
-          matchProbabilityEl.textContent = `${newScore}%`;
-          scoreRing.style.setProperty('--p', String(newScore));
-          matchCaption.textContent = `Simulation: Acquiring "${skill}" boosts your predicted match score to ${newScore}%! (Resume unchanged)`;
+        if (simulatedAddedSkills.has(skill)) {
+          simulatedAddedSkills.delete(skill);
         } else {
-          item.style.opacity = '1';
-          item.style.textDecoration = 'none';
-          matchProbabilityEl.textContent = `${baseMatchScore}%`;
-          scoreRing.style.setProperty('--p', String(baseMatchScore));
-          matchCaption.textContent = 'Click any missing skill above to simulate score impact.';
+          simulatedAddedSkills.add(skill);
         }
+        // Re-render missing skills to keep opacities synced, then update multi-color ring gradient
+        renderSkills(missingSkillsEl, skills, true, catalogLength);
+        updateScoreRingAndSimulation();
       });
     } else {
       item.title = 'Click to view optimization tip';
@@ -502,15 +535,21 @@ form.addEventListener('submit', async (event) => {
 
     resumePreview.innerHTML = html;
     const score = Number.isFinite(match) ? match : 0;
+  simulatedAddedSkills.clear();
+    baseMatchScore = score;
+    const catalogKey = detectCatalogKey(targetRole);
+    totalCatalogLength = SKILL_CATALOGS[catalogKey] ? SKILL_CATALOGS[catalogKey].length : 10;
+
     matchProbabilityEl.textContent = Number.isFinite(match) ? `${match}%` : '—';
     scoreRing.style.setProperty('--p', String(score));
+    scoreRing.style.background = `conic-gradient(var(--navy) calc(${score} * 1%), #e2e8f0 0)`;
+    
     matchCaption.textContent = score >= 80
       ? 'Strong alignment with the target role.'
-      : score >= 60
-        ? 'Solid foundation with a few high-impact gaps.'
-        : 'Prioritize the missing skills to improve ATS match.';
-    renderSkills(presentSkillsEl, parsed.present_skills);
-    renderSkills(missingSkillsEl, parsed.missing_skills);
+      : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
+      
+    renderSkills(presentSkillsEl, parsed.present_skills, false);
+    renderSkills(missingSkillsEl, parsed.missing_skills, true, totalCatalogLength);
     dashboard.hidden = false;
     dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
