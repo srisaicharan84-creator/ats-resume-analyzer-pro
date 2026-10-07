@@ -136,6 +136,15 @@ function setLoading(isLoading) {
 }
 let baseMatchScore = 0;
 let totalCatalogLength = 0;
+const SKILL_COLORS = [
+  { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' }, 
+  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe' }, 
+  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa' },
+  { bg: '#fefce8', text: '#a16207', border: '#fef08a' }, 
+  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
+  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8' }, 
+  { bg: '#f8fafc', text: '#334155', border: '#cbd5e1' },
+];
 
 function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 10) {
   listEl.innerHTML = '';
@@ -152,8 +161,13 @@ function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 
     item.textContent = String(skill);
 
     if (isMissingSection) {
-      item.title = 'Click to simulate adding this skill to your match score';
+      const colorScheme = SKILL_COLORS[index % SKILL_COLORS.length];
+      item.style.backgroundColor = colorScheme.bg;
+      item.style.color = colorScheme.text;
+      item.style.border = `1px solid ${colorScheme.border}`;
       item.style.cursor = 'pointer';
+      item.title = 'Click to simulate adding this skill to your match score!';
+      
       
       let isSimulatedActive = false;
       item.addEventListener('click', () => {
