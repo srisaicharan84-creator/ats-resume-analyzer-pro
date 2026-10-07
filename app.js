@@ -12,6 +12,7 @@ const matchCaption = document.getElementById('match-caption');
 const presentSkillsEl = document.getElementById('present-skills');
 const missingSkillsEl = document.getElementById('missing-skills');
 const downloadPdfBtn = document.getElementById('download-pdf');
+const copyTextBtn = document.getElementById('copy-text-btn');
 
 const SKILL_CATALOGS = {
   frontend: [
@@ -498,4 +499,20 @@ downloadPdfBtn.addEventListener('click', () => {
       cleanup();
       showError('Could not export the PDF. Please try again.');
     });
+});
+copyTextBtn.addEventListener('click', () => {
+  const textContent = resumePreview.innerText;
+  if (!textContent.trim()) {
+    showError('No resume text available to copy.');
+    return;
+  }
+  navigator.clipboard.writeText(textContent).then(() => {
+    const originalText = copyTextBtn.textContent;
+    copyTextBtn.textContent = 'Copied to Clipboard!';
+    setTimeout(() => {
+      copyTextBtn.textContent = originalText;
+    }, 2000);
+  }).catch(() => {
+    showError('Failed to copy text.');
+  });
 });
