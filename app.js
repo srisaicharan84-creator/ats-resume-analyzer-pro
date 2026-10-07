@@ -164,6 +164,7 @@ function updateScoreRingAndSimulation() {
   const simulatedScore = Math.min(99, baseMatchScore + activeCount * boostPerSkill);
 
   matchProbabilityEl.textContent = `${simulatedScore}%`;
+  scoreRing.setAttribute('aria-label', `Match score: ${simulatedScore} percent`);
   scoreRing.style.setProperty('--p', String(simulatedScore));
 
   const stops = [`var(--navy) 0% ${baseMatchScore}%`];
@@ -214,6 +215,12 @@ function renderSkills(listEl, skills, isMissingSection = false) {
       item.style.opacity = selected ? '0.5' : '1';
       item.style.textDecoration = selected ? 'line-through' : 'none';
       item.title = 'Click to simulate adding this skill to your match score!';
+        item.tabIndex = 0;
+  item.setAttribute('role', 'button');
+  item.setAttribute('aria-pressed', String(selected));
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
+  });
 
       item.addEventListener('click', () => {
         if (simulatedAddedSkills.has(skill)) simulatedAddedSkills.delete(skill);
