@@ -134,47 +134,49 @@ function setLoading(isLoading) {
   generateBtn.disabled = isLoading;
   generateBtn.textContent = isLoading ? 'Generating…' : 'Generate Resume';
 }
+
+/* ---------- Simulation state ---------- */
+
 let baseMatchScore = 0;
 let totalCatalogLength = 0;
-let simulatedAddedSkills = new Set();
+let missingSkillOrder = [];              // stable order: drives badge color AND ring segment order
+const simulatedAddedSkills = new Set();  // currently selected missing skills
 
 const SKILL_COLORS = [
   { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', hex: '#1d4ed8' },
-  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe', hex: '#a21caf' }, 
-  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', hex: '#c2410c' }, 
-  { bg: '#fefce8', text: '#a16207', border: '#fef08a', hex: '#ca8a04' }, 
-  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', hex: '#15803d' }, 
-  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8', hex: '#be185d' }, 
-  { bg: '#f8fafc', text: '#334155', border: '#cbd5e1', hex: '#475569' }, 
+  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe', hex: '#a21caf' },
+  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', hex: '#c2410c' },
+  { bg: '#fefce8', text: '#a16207', border: '#fef08a', hex: '#ca8a04' },
+  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', hex: '#15803d' },
+  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8', hex: '#be185d' },
+  { bg: '#f8fafc', text: '#334155', border: '#cbd5e1', hex: '#475569' },
 ];
+
+function colorForSkill(name) {
+  const i = missingSkillOrder.indexOf(name);
+  return SKILL_COLORS[(i < 0 ? 0 : i) % SKILL_COLORS.length];
+}
+
 function updateScoreRingAndSimulation() {
   const boostPerSkill = totalCatalogLength > 0 ? Math.round(88 / totalCatalogLength) : 8;
-  const activeCount = simulatedAddedSkills.size;
-  const simulatedScore = Math.min(99, baseMatchScore + (activeCount * boostPerSkill));
+  const selected = missingSkillOrder.filter((s) => simulatedAddedSkills.has(s));
+  const activeCount = selected.length;
+  const simulatedScore = Math.min(99, baseMatchScore + activeCount * boostPerSkill);
 
   matchProbabilityEl.textContent = `${simulatedScore}%`;
   scoreRing.style.setProperty('--p', String(simulatedScore));
 
-  if (activeCount === 0) {
-    scoreRing.style.background = `conic-gradient(var(--navy) calc(${simulatedScore} * 1%), #e2e8f0 0)`;
-  } else {
-    let gradientStops = [];
-    let currentPct = baseMatchScore;
-    gradientStops.push(`var(--navy) 0% ${currentPct}%`);
+  const stops = [`var(--navy) 0% ${baseMatchScore}%`];
+  let currentPct = baseMatchScore;
 
-    let idx = 0;
-    simulatedAddedSkills.forEach((skillName) => {
-    
-      const colorObj = SKILL_COLORS[idx % SKILL_COLORS.length];
+  selected.forEach((skillName) => {
+    const nextPct = Math.min(99, currentPct + boostPerSkill);
+    stops.push(`${colorForSkill(skillName).hex} ${currentPct}% ${nextPct}%`);
+    currentPct = nextPct;
+  });
 
-      const nextPct = Math.min(99, currentPct + boostPerSkill);
-      gradientStops.push(`${colorObj.hex} ${currentPct}% ${nextPct}%`);
-      currentPct = nextPct;
-      idx++;
-    });
-    gradientStops.push(`#e2e8f0 ${currentPct}% 100%`);
-    scoreRing.style.background = `conic-gradient(${gradientStops.join(', ')})`;
-  }
+  stops.push(`#e2e8f0 ${currentPct}% 100%`);
+  scoreRing.style.background = `conic-gradient(${stops.join(', ')})`;
 
   if (activeCount > 0) {
     matchCaption.textContent = `Simulation active: +${activeCount} skill(s) selected. Potential match score: ${simulatedScore}%! (Resume unchanged)`;
@@ -184,46 +186,39 @@ function updateScoreRingAndSimulation() {
       : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
   }
 }
-function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 10) {
+
+function renderSkills(listEl, skills, isMissingSection = false) {
   if (!listEl) return;
   listEl.innerHTML = '';
+
   if (!Array.isArray(skills) || skills.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'empty';
-   empty.textContent = isMissingSection ? 'No missing skills — perfect match!' : 'None listed';
+    empty.textContent = isMissingSection ? 'No missing skills — perfect match!' : 'None listed';
     listEl.appendChild(empty);
     return;
   }
 
-  skills.forEach((skill, index) => {
+  skills.forEach((skill) => {
     const item = document.createElement('li');
     item.textContent = String(skill);
 
     if (isMissingSection) {
-      const colorScheme = SKILL_COLORS[index % SKILL_COLORS.length];
-      item.style.backgroundColor = colorScheme.bg;
-      item.style.color = colorScheme.text;
-      item.style.border = `1px solid ${colorScheme.border}`;
+      const color = colorForSkill(skill);   // same color the ring segment will use
+      const selected = simulatedAddedSkills.has(skill);
+
+      item.style.backgroundColor = color.bg;
+      item.style.color = color.text;
+      item.style.border = `1px solid ${color.border}`;
       item.style.cursor = 'pointer';
+      item.style.opacity = selected ? '0.5' : '1';
+      item.style.textDecoration = selected ? 'line-through' : 'none';
       item.title = 'Click to simulate adding this skill to your match score!';
 
-      // Reflect current simulation state from the central Set
-      if (simulatedAddedSkills.has(skill)) {
-        item.style.opacity = '0.5';
-        item.style.textDecoration = 'line-through';
-      } else {
-        item.style.opacity = '1';
-        item.style.textDecoration = 'none';
-      }
-
       item.addEventListener('click', () => {
-        if (simulatedAddedSkills.has(skill)) {
-          simulatedAddedSkills.delete(skill);
-        } else {
-          simulatedAddedSkills.add(skill);
-        }
-        // Re-render missing skills to keep opacities synced, then update multi-color ring gradient
-        renderSkills(missingSkillsEl, skills, true, catalogLength);
+        if (simulatedAddedSkills.has(skill)) simulatedAddedSkills.delete(skill);
+        else simulatedAddedSkills.add(skill);
+        renderSkills(listEl, skills, true);
         updateScoreRingAndSimulation();
       });
     } else {
@@ -238,6 +233,8 @@ function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 
     listEl.appendChild(item);
   });
 }
+
+/* ---------- Analysis helpers ---------- */
 
 function slugify(value) {
   return value
@@ -340,6 +337,8 @@ async function simulateAnalysis(targetRole, background) {
     missing_skills: analysis.missing,
   };
 }
+
+/* ---------- File upload ---------- */
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const PDFJS_VERSION = '3.11.174';
@@ -512,6 +511,8 @@ fileRemoveBtn.addEventListener('click', () => {
   clearError();
 });
 
+/* ---------- Generate resume (single submit handler) ---------- */
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   clearError();
@@ -536,22 +537,19 @@ form.addEventListener('submit', async (event) => {
     }
 
     resumePreview.innerHTML = html;
-    const score = Number.isFinite(match) ? match : 0;
-  simulatedAddedSkills.clear();
-    baseMatchScore = score;
-    const catalogKey = detectCatalogKey(targetRole);
-    totalCatalogLength = SKILL_CATALOGS[catalogKey] ? SKILL_CATALOGS[catalogKey].length : 10;
 
-    matchProbabilityEl.textContent = Number.isFinite(match) ? `${match}%` : '—';
-    scoreRing.style.setProperty('--p', String(score));
-    scoreRing.style.background = `conic-gradient(var(--navy) calc(${score} * 1%), #e2e8f0 0)`;
-    
-    matchCaption.textContent = score >= 80
-      ? 'Strong alignment with the target role.'
-      : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
-      
+    // Reset simulation state
+    simulatedAddedSkills.clear();
+    baseMatchScore = Number.isFinite(match) ? match : 0;
+    const catalogKey = detectCatalogKey(targetRole);
+    totalCatalogLength = (SKILL_CATALOGS[catalogKey] || SKILL_CATALOGS.general).length;
+    missingSkillOrder = Array.isArray(parsed.missing_skills) ? [...parsed.missing_skills] : [];
+
+    // Render badges first so colors are ready, then draw the ring in one place
     renderSkills(presentSkillsEl, parsed.present_skills, false);
-    renderSkills(missingSkillsEl, parsed.missing_skills, true, totalCatalogLength);
+    renderSkills(missingSkillsEl, missingSkillOrder, true);
+    updateScoreRingAndSimulation();
+
     dashboard.hidden = false;
     dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
@@ -560,6 +558,8 @@ form.addEventListener('submit', async (event) => {
     setLoading(false);
   }
 });
+
+/* ---------- Export / copy (registered once) ---------- */
 
 downloadPdfBtn.addEventListener('click', () => {
   if (!resumePreview.innerHTML.trim()) {
@@ -593,53 +593,7 @@ downloadPdfBtn.addEventListener('click', () => {
       showError('Could not export the PDF. Please try again.');
     });
 });
-copyTextBtn.addEventListener('click', () => {
-  const textContent = resumePreview.innerText;
-  if (!textContent.trim()) {
-    showError('No resume text available to copy.');
-    return;
-  }
-  navigator.clipboard.writeText(textContent).then(() => {
-    const originalText = copyTextBtn.textContent;
-    copyTextBtn.textContent = 'Copied to Clipboard!';
-    setTimeout(() => {
-      copyTextBtn.textContent = originalText;
-    }, 2000);
-  }).catch(() => {
-    showError('Failed to copy text.');
-  });
-});downloadPdfBtn.addEventListener('click', () => {
-  if (!resumePreview.innerHTML.trim()) {
-    showError('Generate a resume before downloading a PDF.');
-    return;
-  }
-  if (typeof html2pdf !== 'function') {
-    showError('PDF exporter failed to load. Check your connection and refresh.');
-    return;
-  }
 
-  const filename = `${slugify(targetRoleInput.value.trim())}-resume.pdf`;
-
-  resumePreview.classList.add('pdf-export');
-  const cleanup = () => resumePreview.classList.remove('pdf-export');
-
-  html2pdf()
-    .set({
-      margin: 10,
-      filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-    })
-    .from(resumePreview)
-    .save()
-    .then(cleanup)
-    .catch(() => {
-      cleanup();
-      showError('Could not export the PDF. Please try again.');
-    });
-});
 copyTextBtn.addEventListener('click', () => {
   const textContent = resumePreview.innerText;
   if (!textContent.trim()) {
@@ -656,51 +610,3 @@ copyTextBtn.addEventListener('click', () => {
     showError('Failed to copy text.');
   });
 });
-
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  clearError();
-
-  const targetRole = targetRoleInput.value.trim();
-  const background = backgroundInput.value.trim();
-
-  if (!targetRole || !background) {
-    showError('Please enter a target role and your background text.');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const parsed = await simulateAnalysis(targetRole, background);
-    const html = parsed.rewritten_resume_html;
-    const match = Number.parseInt(parsed.match_probability, 10);
-
-    if (typeof html !== 'string' || !html.trim()) {
-      throw new Error('Resume HTML was missing from the response.');
-    }
-resumePreview.innerHTML = html;
-    const score = Number.isFinite(match) ? match : 0;
- 
-    baseMatchScore = score;
-    const catalogKey = detectCatalogKey(targetRole);
-    totalCatalogLength = SKILL_CATALOGS[catalogKey] ? SKILL_CATALOGS[catalogKey].length : 10;
-
-    matchProbabilityEl.textContent = Number.isFinite(match) ? `${match}%` : '—';
-    scoreRing.style.setProperty('--p', String(score));
-    matchCaption.textContent = score >= 80
-      ? 'Strong alignment with the target role.'
-      : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
-      
-    renderSkills(presentSkillsEl, parsed.present_skills, false);
-    renderSkills(missingSkillsEl, parsed.missing_skills, true, totalCatalogLength);
-    
-    dashboard.hidden = false;
-    dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (error) {
-    showError(error.message || 'Could not generate the resume. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-});
-  
