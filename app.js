@@ -134,7 +134,10 @@ function setLoading(isLoading) {
   generateBtn.disabled = isLoading;
   generateBtn.textContent = isLoading ? 'Generating…' : 'Generate Resume';
 }
-function renderSkills(listEl, skills) {
+let baseMatchScore = 0;
+let totalCatalogLength = 0;
+
+function renderSkills(listEl, skills, isMissingSection = false, catalogLength = 10) {
   listEl.innerHTML = '';
   if (!Array.isArray(skills) || skills.length === 0) {
     const empty = document.createElement('li');
@@ -147,12 +150,42 @@ function renderSkills(listEl, skills) {
   skills.forEach((skill) => {
     const item = document.createElement('li');
     item.textContent = String(skill);
-    item.title = 'Click to view optimization tip';
-    item.addEventListener('click', () => {
-      if (matchCaption) {
-        matchCaption.textContent = `Tip: Emphasize "${skill}" in your experience bullets to boost your ATS match score!`;
-      }
-    });
+
+    if (isMissingSection) {
+      item.title = 'Click to simulate adding this skill to your match score';
+      item.style.cursor = 'pointer';
+      
+      let isSimulatedActive = false;
+      item.addEventListener('click', () => {
+        isSimulatedActive = !isSimulatedActive;
+        
+        const boostPerSkill = catalogLength > 0 ? Math.round(88 / catalogLength) : 8;
+        const currentScoreNum = parseInt(matchProbabilityEl.textContent, 10) || baseMatchScore;
+        
+        if (isSimulatedActive) {
+          item.style.opacity = '0.6';
+          item.style.textDecoration = 'line-through';
+          const newScore = Math.min(99, currentScoreNum + boostPerSkill);
+          matchProbabilityEl.textContent = `${newScore}%`;
+          scoreRing.style.setProperty('--p', String(newScore));
+          matchCaption.textContent = `Simulation: Acquiring "${skill}" boosts your predicted match score to ${newScore}%! (Resume unchanged)`;
+        } else {
+          item.style.opacity = '1';
+          item.style.textDecoration = 'none';
+          matchProbabilityEl.textContent = `${baseMatchScore}%`;
+          scoreRing.style.setProperty('--p', String(baseMatchScore));
+          matchCaption.textContent = 'Click any missing skill above to simulate score impact.';
+        }
+      });
+    } else {
+      item.title = 'Click to view optimization tip';
+      item.addEventListener('click', () => {
+        if (matchCaption) {
+          matchCaption.textContent = `Tip: Emphasize "${skill}" in your experience bullets to boost your ATS match score!`;
+        }
+      });
+    }
+
     listEl.appendChild(item);
   });
 }
@@ -591,18 +624,22 @@ form.addEventListener('submit', async (event) => {
     if (typeof html !== 'string' || !html.trim()) {
       throw new Error('Resume HTML was missing from the response.');
     }
-
-    resumePreview.innerHTML = html;
+resumePreview.innerHTML = html;
     const score = Number.isFinite(match) ? match : 0;
+ 
+    baseMatchScore = score;
+    const catalogKey = detectCatalogKey(targetRole);
+    totalCatalogLength = SKILL_CATALOGS[catalogKey] ? SKILL_CATALOGS[catalogKey].length : 10;
+
     matchProbabilityEl.textContent = Number.isFinite(match) ? `${match}%` : '—';
     scoreRing.style.setProperty('--p', String(score));
     matchCaption.textContent = score >= 80
       ? 'Strong alignment with the target role.'
-      : score >= 60
-        ? 'Solid foundation with a few high-impact gaps.'
-        : 'Prioritize the missing skills to improve ATS match.';
-    renderSkills(presentSkillsEl, parsed.present_skills);
-    renderSkills(missingSkillsEl, parsed.missing_skills);
+      : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
+      
+    renderSkills(presentSkillsEl, parsed.present_skills, false);
+    renderSkills(missingSkillsEl, parsed.missing_skills, true, totalCatalogLength);
+    
     dashboard.hidden = false;
     dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
@@ -611,3 +648,4 @@ form.addEventListener('submit', async (event) => {
     setLoading(false);
   }
 });
+  
