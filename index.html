@@ -21,9 +21,7 @@
         </div>
       </div>
       <p class="lede">Rewrite your background into an ATS-friendly resume, score the role match, and export a polished PDF — entirely in your browser.</p>
-      <p style="margin: 4px 0 12px; font-size: 0.95rem; font-weight: 600; color: #1e4a7a;">
-        Created by Charan Sri Sai Yenumula
-      </p>
+      <p class="creator">Created by Charan Sri Sai Yenumula</p>
       <ul class="trust-row" aria-label="Product highlights">
         <li>PDF &amp; TXT upload</li>
       </ul>
@@ -103,10 +101,10 @@
             <h2>Output dashboard</h2>
             <p class="toolbar-sub">ATS preview, match score, and skill gaps.</p>
           </div>
-          <div class="toolbar-actions" style="display: flex; gap: 10px;">
-            <button type="button" id="copy-text-btn" style="background: #f1f5f9; color: var(--navy); border: 1px solid var(--line);">Copy Plain Text</button>
-          <button type="button" id="download-pdf">Download PDF</button>
-        </div>
+          <div class="toolbar-actions">
+            <button type="button" id="copy-text-btn">Copy Plain Text</button>
+            <button type="button" id="download-pdf">Download PDF</button>
+          </div>
         </div>
 
         <div class="dashboard-grid">
@@ -118,11 +116,11 @@
             <article class="card card-match">
               <h3>Match probability</h3>
               <div class="score-wrap">
-               <div id="score-ring" class="score-ring" style="--p: 0" role="img" aria-label="Match score ring">
+                <div id="score-ring" class="score-ring" style="--p: 0" role="img" aria-label="Match score ring">
                   <span id="match-probability" class="match-value">—</span>
                 </div>
               </div>
-             <p id="match-caption" class="match-caption" aria-live="polite">Generate a resume to see your score.</p>
+              <p id="match-caption" class="match-caption" aria-live="polite">Generate a resume to see your score.</p>
             </article>
 
             <article class="card">
