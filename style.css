@@ -55,18 +55,17 @@ body {
   margin-bottom: 14px;
 }
 
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 100%);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  box-shadow: 0 10px 24px rgba(15, 39, 68, 0.28);
+.site-logo {
+  display: block;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px;
+  max-width: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex: 0 0 48px;
 }
 
 .eyebrow {
@@ -89,6 +88,13 @@ body {
   margin: 0 0 16px;
   max-width: 68ch;
   color: var(--muted);
+}
+
+.creator {
+  margin: 4px 0 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e4a7a;
 }
 
 .trust-row {
@@ -272,6 +278,17 @@ button:active {
   gap: 10px;
   flex-shrink: 0;
 }
+
+#copy-text-btn {
+  background: #f1f5f9;
+  color: var(--navy);
+  border: 1px solid var(--line);
+}
+
+#copy-text-btn:hover {
+  background: #e2e8f0;
+}
+
 #download-pdf {
   background: #fff;
   color: var(--navy);
@@ -346,6 +363,25 @@ button:active {
   padding-left: 18px;
 }
 
+#resume-preview h1,
+#resume-preview h2,
+#resume-preview h3,
+#resume-preview ul,
+#resume-preview li,
+#resume-preview p {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+#resume-preview.pdf-export {
+  width: 190mm;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
 .analytics {
   display: flex;
   flex-direction: column;
@@ -373,6 +409,7 @@ button:active {
 
 .score-ring {
   --p: 0;
+  position: relative;
   width: 132px;
   height: 132px;
   border-radius: 50%;
@@ -388,10 +425,6 @@ button:active {
   border-radius: 50%;
   background: #fff;
   position: absolute;
-}
-
-.score-ring {
-  position: relative;
 }
 
 .match-value {
@@ -426,6 +459,17 @@ button:active {
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.skill-list li:hover {
+  transform: scale(1.04);
+}
+
+.skill-list li:focus-visible {
+  outline: 3px solid rgba(29, 78, 216, 0.45);
+  outline-offset: 2px;
 }
 
 #present-skills li {
@@ -443,6 +487,11 @@ button:active {
   color: var(--muted);
   font-weight: 500;
   padding: 0;
+  cursor: default;
+}
+
+.skill-list .empty:hover {
+  transform: none;
 }
 
 .site-footer {
@@ -554,25 +603,6 @@ button:active {
   background: var(--miss-bg);
 }
 
-#resume-preview h1,
-#resume-preview h2,
-#resume-preview h3,
-#resume-preview ul,
-#resume-preview li,
-#resume-preview p {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-#resume-preview.pdf-export {
-  width: 190mm;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
-  box-shadow: none;
-}
-
 @media (max-width: 980px) {
   .dashboard-grid,
   .field-row {
@@ -600,28 +630,12 @@ button:active {
     align-items: stretch;
   }
 
+  .toolbar-actions {
+    flex-wrap: wrap;
+  }
+
   .form-actions {
     flex-direction: column;
     align-items: stretch;
   }
-}
-.site-logo {
-  display: block;
-  width: 48px !important;
-  height: 48px !important;
-  min-width: 48px;
-  max-width: 48px;
-  min-height: 48px;
-  max-height: 48px;
-  object-fit: contain;
-  border-radius: 8px;
-  flex: 0 0 48px;
-}
-#missing-skills li, #present-skills li {
-  cursor: pointer;
-  transition: transform 0.1s, opacity 0.15s;
-}
-#missing-skills li:hover, #present-skills li:hover {
-  transform: scale(1.04);
-  opacity: 0.85;
 }
