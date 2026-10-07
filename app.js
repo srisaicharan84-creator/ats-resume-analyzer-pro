@@ -1,6 +1,6 @@
 const form = document.getElementById('resume-form');
 const generateBtn = document.getElementById('generate-btn');
-const targetRoleInput = document.getElementById('target-role');c
+const targetRoleInput = document.getElementById('target-role');
 const backgroundInput = document.getElementById('background-text');
 const presetSelect = document.getElementById('preset-select');
 const formError = document.getElementById('form-error');
