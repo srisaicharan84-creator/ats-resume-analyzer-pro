@@ -12,7 +12,6 @@ const matchCaption = document.getElementById('match-caption');
 const presentSkillsEl = document.getElementById('present-skills');
 const missingSkillsEl = document.getElementById('missing-skills');
 const downloadPdfBtn = document.getElementById('download-pdf');
-const copyTextBtn = document.getElementById('copy-text-btn');
 
 const SKILL_CATALOGS = {
   frontend: [
@@ -135,20 +134,20 @@ function setLoading(isLoading) {
   generateBtn.textContent = isLoading ? 'Generating…' : 'Generate Resume';
 }
 
-/* ---------- Simulation state ---------- */
+/* ---------- What-if score simulation ---------- */
 
 let baseMatchScore = 0;
 let totalCatalogLength = 0;
-let missingSkillOrder = [];              // stable order: drives badge color AND ring segment order
-const simulatedAddedSkills = new Set();  // currently selected missing skills
+let missingSkillOrder = [];              // fixed order: decides badge colour AND ring segment order
+const simulatedAddedSkills = new Set();  // missing skills the user has clicked
 
 const SKILL_COLORS = [
-  { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', hex: '#1d4ed8' },
-  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe', hex: '#a21caf' },
-  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', hex: '#c2410c' },
+  { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', hex: '#2563eb' },
+  { bg: '#fdf4ff', text: '#a21caf', border: '#f5d0fe', hex: '#c026d3' },
+  { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', hex: '#ea580c' },
   { bg: '#fefce8', text: '#a16207', border: '#fef08a', hex: '#ca8a04' },
-  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', hex: '#15803d' },
-  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8', hex: '#be185d' },
+  { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', hex: '#16a34a' },
+  { bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8', hex: '#db2777' },
   { bg: '#f8fafc', text: '#334155', border: '#cbd5e1', hex: '#475569' },
 ];
 
@@ -157,45 +156,44 @@ function colorForSkill(name) {
   return SKILL_COLORS[(i < 0 ? 0 : i) % SKILL_COLORS.length];
 }
 
+function baseCaption(score) {
+  return score >= 80
+    ? 'Strong alignment with the target role.'
+    : score >= 60
+      ? 'Solid foundation with a few high-impact gaps. Click a missing skill to see your score grow!'
+      : 'Prioritize the missing skills. Click one to see how much your score grows!';
+}
+
 function updateScoreRingAndSimulation() {
   const boostPerSkill = totalCatalogLength > 0 ? Math.round(88 / totalCatalogLength) : 8;
   const selected = missingSkillOrder.filter((s) => simulatedAddedSkills.has(s));
-  const activeCount = selected.length;
-  const simulatedScore = Math.min(99, baseMatchScore + activeCount * boostPerSkill);
+  const simulatedScore = Math.min(99, baseMatchScore + selected.length * boostPerSkill);
 
   matchProbabilityEl.textContent = `${simulatedScore}%`;
-  scoreRing.setAttribute('aria-label', `Match score: ${simulatedScore} percent`);
   scoreRing.style.setProperty('--p', String(simulatedScore));
 
-  const stops = [`var(--navy) 0% ${baseMatchScore}%`];
+  // base score in navy, then one coloured slice per selected skill, then grey
+  const stops = [`#0f2744 0% ${baseMatchScore}%`];
   let currentPct = baseMatchScore;
-
   selected.forEach((skillName) => {
     const nextPct = Math.min(99, currentPct + boostPerSkill);
     stops.push(`${colorForSkill(skillName).hex} ${currentPct}% ${nextPct}%`);
     currentPct = nextPct;
   });
-
   stops.push(`#e2e8f0 ${currentPct}% 100%`);
   scoreRing.style.background = `conic-gradient(${stops.join(', ')})`;
 
-  if (activeCount > 0) {
-    matchCaption.textContent = `Simulation active: +${activeCount} skill(s) selected. Potential match score: ${simulatedScore}%! (Resume unchanged)`;
-  } else {
-    matchCaption.textContent = baseMatchScore >= 80
-      ? 'Strong alignment with the target role.'
-      : 'Solid foundation. Click any missing skill below to see how much your match score grows!';
-  }
+  matchCaption.textContent = selected.length > 0
+    ? `Simulation: +${selected.length} skill(s) selected. Potential match score: ${simulatedScore}%. (Your resume is unchanged.)`
+    : baseCaption(baseMatchScore);
 }
 
-function renderSkills(listEl, skills, isMissingSection = false) {
-  if (!listEl) return;
+function renderSkills(listEl, skills, isMissing = false) {
   listEl.innerHTML = '';
-
   if (!Array.isArray(skills) || skills.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'empty';
-    empty.textContent = isMissingSection ? 'No missing skills — perfect match!' : 'None listed';
+    empty.textContent = isMissing ? 'No missing skills - perfect match!' : 'None listed';
     listEl.appendChild(empty);
     return;
   }
@@ -203,10 +201,9 @@ function renderSkills(listEl, skills, isMissingSection = false) {
   skills.forEach((skill) => {
     const item = document.createElement('li');
     item.textContent = String(skill);
-    item.dataset.skill = String(skill);
 
-    if (isMissingSection) {
-      const color = colorForSkill(skill);   // same color the ring segment will use
+    if (isMissing) {
+      const color = colorForSkill(skill);
       const selected = simulatedAddedSkills.has(skill);
 
       item.style.backgroundColor = color.bg;
@@ -215,44 +212,19 @@ function renderSkills(listEl, skills, isMissingSection = false) {
       item.style.cursor = 'pointer';
       item.style.opacity = selected ? '0.5' : '1';
       item.style.textDecoration = selected ? 'line-through' : 'none';
-      item.title = 'Click to simulate adding this skill to your match score!';
-
-      // Keyboard accessibility
-      item.tabIndex = 0;
-      item.setAttribute('role', 'button');
-      item.setAttribute('aria-pressed', String(selected));
-      item.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          item.click();
-        }
-      });
+      item.title = 'Click to simulate adding this skill to your match score';
 
       item.addEventListener('click', () => {
         if (simulatedAddedSkills.has(skill)) simulatedAddedSkills.delete(skill);
         else simulatedAddedSkills.add(skill);
-
         renderSkills(listEl, skills, true);
         updateScoreRingAndSimulation();
-
-        // Keep keyboard focus on the badge that was just toggled
-        const again = Array.from(listEl.children).find((el) => el.dataset.skill === String(skill));
-        if (again) again.focus();
-      });
-    } else {
-      item.title = 'Click to view optimization tip';
-      item.addEventListener('click', () => {
-        if (matchCaption) {
-          matchCaption.textContent = `Tip: Emphasize "${skill}" in your experience bullets to boost your ATS match score!`;
-        }
       });
     }
 
     listEl.appendChild(item);
   });
 }
-
-/* ---------- Analysis helpers ---------- */
 
 function slugify(value) {
   return value
@@ -263,19 +235,19 @@ function slugify(value) {
 }
 
 function detectCatalogKey(targetRole) {
-  // Look only at the role part, not the company ("... at Stripe")
-  const text = targetRole.toLowerCase().split(/\s+(?:at|@)\s+/)[0];
-  if (/(full[- ]?stack|mern|\bnode)/.test(text)) return 'fullstack';
+  const text = targetRole.toLowerCase();
   if (/(front[- ]?end|react|ui engineer)/.test(text)) return 'frontend';
-  if (/(python|django|fastapi|back[- ]?end)/.test(text)) return 'python';
+  if (/(full[- ]?stack|node|mern)/.test(text)) return 'fullstack';
+  if (/(python|django|fastapi|backend)/.test(text)) return 'python';
   return 'general';
 }
 
 function hasAlias(haystack, alias) {
-  const escaped = alias.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Short aliases must be whole words (allow plural / "ful": APIs, RESTful)
-  const tail = alias.length <= 4 ? '(?:s|ful)?(?![a-z0-9])' : '';
-  return new RegExp(`(^|[^a-z0-9])${escaped}${tail}`, 'i').test(haystack);
+  const needle = alias.toLowerCase();
+  if (needle.length <= 2) {
+    return new RegExp(`(^|[^a-z0-9])${needle}([^a-z0-9]|$)`, 'i').test(haystack);
+  }
+  return haystack.includes(needle);
 }
 
 function analyzeBackground(targetRole, background) {
@@ -309,7 +281,7 @@ function extractName(background) {
 function extractBullets(background) {
   const lines = background.split(/\n/).map((line) => line.trim()).filter(Boolean);
   const bullets = lines
-    .filter((line) => /^[-•*]/.test(line) || /\b(developed|built|led|designed|improved|created|shipped)\b/i.test(line))
+    .filter((line) => /^[-•*]/.test(line) || /developed|built|led|designed|improved|created|shipped/i.test(line))
     .map((line) => line.replace(/^[-•*]+\s*/, ''))
     .slice(0, 6);
 
@@ -340,6 +312,8 @@ function buildResumeHtml(targetRole, background, analysis) {
     <ul>${skills}</ul>
     <h2>Selected Experience</h2>
     <ul>${bullets}</ul>
+    <h2>Skill gap notes</h2>
+    <p>Priority development areas for this role: ${escapeHtml(analysis.missing.slice(0, 4).join(', ') || 'none identified')}.</p>
   `;
 }
 
@@ -355,8 +329,6 @@ async function simulateAnalysis(targetRole, background) {
     missing_skills: analysis.missing,
   };
 }
-
-/* ---------- File upload ---------- */
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const PDFJS_VERSION = '3.11.174';
@@ -495,7 +467,6 @@ browseBtn.addEventListener('click', (e) => {
 });
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('keydown', (e) => {
-  if (e.target !== dropZone) return; // don't hijack keys from the inner Browse button
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     fileInput.click();
@@ -530,8 +501,6 @@ fileRemoveBtn.addEventListener('click', () => {
   clearError();
 });
 
-/* ---------- Generate resume (single submit handler) ---------- */
-
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   clearError();
@@ -556,19 +525,16 @@ form.addEventListener('submit', async (event) => {
     }
 
     resumePreview.innerHTML = html;
-
-    // Reset simulation state
+    // reset the what-if simulation for this new resume
     simulatedAddedSkills.clear();
     baseMatchScore = Number.isFinite(match) ? match : 0;
     const catalogKey = detectCatalogKey(targetRole);
     totalCatalogLength = (SKILL_CATALOGS[catalogKey] || SKILL_CATALOGS.general).length;
     missingSkillOrder = Array.isArray(parsed.missing_skills) ? [...parsed.missing_skills] : [];
 
-    // Render badges first so colors are ready, then draw the ring in one place
     renderSkills(presentSkillsEl, parsed.present_skills, false);
     renderSkills(missingSkillsEl, missingSkillOrder, true);
     updateScoreRingAndSimulation();
-
     dashboard.hidden = false;
     dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
@@ -577,8 +543,6 @@ form.addEventListener('submit', async (event) => {
     setLoading(false);
   }
 });
-
-/* ---------- Export / copy (registered once) ---------- */
 
 downloadPdfBtn.addEventListener('click', () => {
   if (!resumePreview.innerHTML.trim()) {
@@ -611,51 +575,4 @@ downloadPdfBtn.addEventListener('click', () => {
       cleanup();
       showError('Could not export the PDF. Please try again.');
     });
-});
-
-function fallbackCopy(text) {
-  const area = document.createElement('textarea');
-  area.value = text;
-  area.setAttribute('readonly', '');
-  area.style.position = 'fixed';
-  area.style.opacity = '0';
-  document.body.appendChild(area);
-  area.select();
-  let ok = false;
-  try {
-    ok = document.execCommand('copy');
-  } catch (e) {
-    ok = false;
-  }
-  document.body.removeChild(area);
-  return ok;
-}
-
-copyTextBtn.addEventListener('click', async () => {
-  const textContent = resumePreview.innerText;
-  if (!textContent.trim()) {
-    showError('No resume text available to copy.');
-    return;
-  }
-
-  let copied = false;
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(textContent);
-      copied = true;
-    }
-  } catch (e) {
-    copied = false;
-  }
-  if (!copied) copied = fallbackCopy(textContent);
-
-  if (copied) {
-    const originalText = copyTextBtn.textContent;
-    copyTextBtn.textContent = 'Copied to Clipboard!';
-    setTimeout(() => {
-      copyTextBtn.textContent = originalText;
-    }, 2000);
-  } else {
-    showError('Failed to copy text.');
-  }
 });
