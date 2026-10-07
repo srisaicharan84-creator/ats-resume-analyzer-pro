@@ -611,3 +611,11 @@ button:active {
   border-radius: 8px;
   flex: 0 0 48px;
 }
+#missing-skills li, #present-skills li {
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+#missing-skills li:hover, #present-skills li:hover {
+  transform: scale(1.04);
+  opacity: 0.85;
+}
