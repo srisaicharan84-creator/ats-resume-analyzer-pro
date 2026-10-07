@@ -155,7 +155,6 @@ function updateScoreRingAndSimulation() {
   matchProbabilityEl.textContent = `${simulatedScore}%`;
   scoreRing.style.setProperty('--p', String(simulatedScore));
 
- 
   if (activeCount === 0) {
     scoreRing.style.background = `conic-gradient(var(--navy) calc(${simulatedScore} * 1%), #e2e8f0 0)`;
   } else {
@@ -164,8 +163,10 @@ function updateScoreRingAndSimulation() {
     gradientStops.push(`var(--navy) 0% ${currentPct}%`);
 
     let idx = 0;
-    simulatedAddedSkills.forEach(() => {
+    simulatedAddedSkills.forEach((skillName) => {
+    
       const colorObj = SKILL_COLORS[idx % SKILL_COLORS.length];
+
       const nextPct = Math.min(99, currentPct + boostPerSkill);
       gradientStops.push(`${colorObj.hex} ${currentPct}% ${nextPct}%`);
       currentPct = nextPct;
