@@ -753,3 +753,40 @@ button:active {
     border-radius: 100%;
   }
 }
+body.dark-mode {
+  --ink: #f8fafc;
+  --muted: #94a3b8;
+  --line: #334155;
+  --page: #0b0f19;
+  --panel: rgba(15, 23, 42, 0.75);
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode background,
+body.dark-mode {
+  background:
+    radial-gradient(700px 400px at 95% 5%, rgba(147, 51, 234, 0.2), transparent 70%),
+    radial-gradient(900px 500px at 5% 95%, rgba(59, 130, 246, 0.25), transparent 70%),
+    #0b0f19 !important;
+}
+
+body.dark-mode .panel, 
+body.dark-mode .form-panel, 
+body.dark-mode .results-panel, 
+body.dark-mode .card {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode input[type="text"],
+body.dark-mode textarea,
+body.dark-mode select {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+body.dark-mode #resume-preview {
+  background: #ffffff;
+  color: #111;
+}
