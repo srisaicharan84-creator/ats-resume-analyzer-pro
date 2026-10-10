@@ -693,3 +693,13 @@ button:active {
     align-items: stretch;
   }
 }
+@media (max-width: 768px) {
+  .toolbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
