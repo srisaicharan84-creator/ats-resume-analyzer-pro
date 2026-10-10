@@ -576,12 +576,11 @@ downloadPdfBtn.addEventListener('click', () => {
       showError('Could not export the PDF. Please try again.');
     });
 });
-
 window.addEventListener('load', () => {
   setTimeout(() => {
     const splash = document.getElementById('splash-screen');
     if (splash) {
       splash.remove();
     }
-  }, 2000);
+  }, 1200); 
 });
