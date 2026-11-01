@@ -223,6 +223,8 @@ label {
 }
 
 input[type="text"],
+input[type="email"],
+input[type="tel"],
 textarea,
 select {
   width: 100%;
@@ -249,6 +251,8 @@ select {
 }
 
 input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
 textarea:focus,
 select:focus {
   outline: none;
@@ -779,6 +783,8 @@ body.dark-mode .card {
 }
 
 body.dark-mode input[type="text"],
+body.dark-mode input[type="email"],
+body.dark-mode input[type="tel"],
 body.dark-mode textarea,
 body.dark-mode select {
   background: #1e293b;
@@ -824,3 +830,187 @@ body.dark-mode #present-skills li { background: rgba(4, 120, 87, 0.25); color: #
 body.dark-mode #missing-skills li { background: rgba(185, 28, 28, 0.25); color: #fca5a5; }
 body.dark-mode .file-chip { background: rgba(4, 120, 87, 0.2); border-color: #065f46; }
 body.dark-mode .theme-toggle-btn { background: #1e293b; border-color: #334155; }
+
+.mode-switch {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 4px;
+  width: fit-content;
+  max-width: 100%;
+  background: #eef2f7;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.mode-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.mode-btn.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(15, 39, 68, 0.18);
+}
+
+.wizard-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-progress li {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.wizard-progress li.is-active {
+  background: #dbeafe;
+  color: var(--accent);
+}
+
+.wizard-progress li.is-done {
+  background: var(--have-bg);
+  color: var(--have);
+}
+
+.wizard-title {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.wizard-help {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.choice-btn,
+.skill-pick {
+  width: 100%;
+  text-align: left;
+  background: #f8fafc;
+  color: var(--slate);
+  border: 1px solid var(--line);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 12px 14px;
+}
+
+.choice-btn.is-selected,
+.skill-pick.is-selected {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+.skill-tier {
+  margin-bottom: 18px;
+}
+
+.skill-tier h4 {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.skill-pick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-pick {
+  width: auto;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.extra-skill-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.extra-skill-row input {
+  flex: 1;
+}
+
+.extra-skill-chips {
+  margin-top: 10px;
+}
+
+.extra-skill-chips li {
+  background: #eff6ff;
+  color: var(--accent);
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 18px;
+}
+
+.ghost-btn {
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid var(--line);
+}
+
+.ghost-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#quickfill-wizard textarea {
+  min-height: 120px;
+}
+
+body.dark-mode .mode-switch { background: #111827; }
+body.dark-mode .mode-btn { color: #94a3b8; }
+body.dark-mode .mode-btn.is-active { background: #2563eb; color: #fff; }
+body.dark-mode .wizard-progress li { background: #1e293b; color: #94a3b8; }
+body.dark-mode .wizard-progress li.is-active { background: rgba(37, 99, 235, 0.25); color: #93c5fd; }
+body.dark-mode .wizard-progress li.is-done { background: rgba(4, 120, 87, 0.25); color: #6ee7b7; }
+body.dark-mode .choice-btn,
+body.dark-mode .skill-pick { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+body.dark-mode .choice-btn.is-selected,
+body.dark-mode .skill-pick.is-selected { background: rgba(37, 99, 235, 0.28); border-color: #60a5fa; color: #bfdbfe; }
+body.dark-mode .ghost-btn { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+body.dark-mode .extra-skill-chips li { background: rgba(37, 99, 235, 0.25); color: #bfdbfe; }
+.level-field {
+  margin-bottom: 1rem;
+}
+
+.level-note {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.level-note p {
+  margin: 0 0 0.4rem;
+}
